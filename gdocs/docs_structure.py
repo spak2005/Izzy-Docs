@@ -355,3 +355,43 @@ def analyze_document_complexity(doc_data: dict[str, Any]) -> dict[str, Any]:
         )
 
     return stats
+
+
+def extract_outline(doc_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Extract document outline (headings) with their indices.
+
+    This helps LLMs understand the document's semantic structure by identifying
+    all headings (TITLE, SUBTITLE, HEADING_1-6) with their positions.
+
+    Args:
+        doc_data: Raw document data from Google Docs API
+
+    Returns:
+        List of heading dictionaries with text, level, indices, and occurrence count
+    """
+    structure = parse_document_structure(doc_data)
+    outline = []
+    heading_counts: dict[str, int] = {}  # Track occurrences per heading text
+
+    for element in structure["body"]:
+        if element.get("type") != "paragraph":
+            continue
+
+        style = element.get("style", {})
+        named_style = style.get("namedStyleType", "")
+
+        if named_style in ("TITLE", "SUBTITLE") or named_style.startswith("HEADING_"):
+            text = element.get("text", "").strip()
+            # Track occurrence count for duplicate detection
+            heading_counts[text] = heading_counts.get(text, 0) + 1
+
+            outline.append({
+                "text": text,
+                "level": named_style,
+                "start_index": element["start_index"],
+                "end_index": element["end_index"],
+                "occurrence": heading_counts[text],
+            })
+
+    return outline

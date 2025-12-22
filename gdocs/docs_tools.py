@@ -43,6 +43,7 @@ from gdocs.docs_structure import (
     parse_document_structure,
     find_tables,
     analyze_document_complexity,
+    extract_outline,
 )
 from gdocs.docs_tables import extract_table_as_data
 
@@ -929,28 +930,38 @@ async def inspect_doc_structure(
     detailed: bool = False,
 ) -> str:
     """
-    Essential tool for finding safe insertion points and understanding document structure.
+    Essential tool for understanding document structure and finding sections/headings.
 
     USE THIS FOR:
-    - Finding the correct index for table insertion
+    - Getting the document OUTLINE (all headings with their indices)
+    - Finding duplicate sections that need to be removed
     - Understanding document layout before making changes
+    - Finding the correct index for insertions (tables, page breaks, etc.)
     - Locating existing tables and their positions
-    - Getting document statistics and complexity info
 
-    CRITICAL FOR TABLE OPERATIONS:
-    ALWAYS call this BEFORE creating tables to get a safe insertion index.
+    OUTLINE FEATURE (KEY CAPABILITY):
+    The response includes an "outline" array showing all headings:
+    - text: The heading text
+    - level: TITLE, HEADING_1, HEADING_2, etc.
+    - start_index / end_index: Exact character positions
+    - occurrence: Which instance (1st, 2nd, etc.) if there are duplicates
+
+    DUPLICATE DETECTION:
+    If any heading appears multiple times, "duplicate_headings" lists them.
+    Use the "occurrence" field to target specific instances.
+
+    EXAMPLE: To delete "the second Deep Dive section":
+    1. Call inspect_doc_structure
+    2. Find "Deep Dive" with occurrence=2 in the outline
+    3. Use its start_index and the next heading's start_index to delete
 
     WHAT THE OUTPUT SHOWS:
+    - outline: List of all headings with text, level, indices, occurrence
+    - duplicate_headings: Names of headings that appear more than once
     - total_elements: Number of document elements
     - total_length: Maximum safe index for insertion
     - tables: Number of existing tables
     - table_details: Position and dimensions of each table
-
-    WORKFLOW:
-    Step 1: Call this function
-    Step 2: Note the "total_length" value
-    Step 3: Use an index < total_length for table insertion
-    Step 4: Create your table
 
     Args:
         user_google_email: User's Google email address
@@ -958,7 +969,7 @@ async def inspect_doc_structure(
         detailed: Whether to return detailed structure information
 
     Returns:
-        str: JSON string containing document structure and safe insertion indices
+        str: JSON string containing document outline, structure, and safe insertion indices
     """
     logger.debug(f"[inspect_doc_structure] Doc={document_id}, detailed={detailed}")
 
@@ -1042,6 +1053,15 @@ async def inspect_doc_structure(
                         "end_index": table["end_index"],
                     }
                 )
+
+    # Add outline (headings) for semantic navigation
+    outline = extract_outline(doc)
+    if outline:
+        result["outline"] = outline
+        # Flag duplicate headings for easy detection
+        duplicates = [h["text"] for h in outline if h["occurrence"] > 1]
+        if duplicates:
+            result["duplicate_headings"] = list(set(duplicates))
 
     link = f"https://docs.google.com/document/d/{document_id}/edit"
     return f"Document structure analysis for {document_id}:\n\n{json.dumps(result, indent=2)}\n\nLink: {link}"
