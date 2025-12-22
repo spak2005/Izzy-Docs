@@ -1,0 +1,101 @@
+# ---- Environment & Secrets (CRITICAL - never commit!) ---------------------
+.env
+.env.*
+*.env
+!.env.example
+client_secret.json
+client_secret*.json
+credentials.json
+token.json
+*.pem
+*.key
+
+# ---- Python artefacts ------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ---- Packaging -------------------------------------------------------------
+*.egg
+*.egg-info/
+build/
+dist/
+eggs/
+wheels/
+*.whl
+pip-wheel-metadata/
+share/python-wheels/
+MANIFEST
+
+# ---- Virtual Environments --------------------------------------------------
+.venv/
+venv/
+ENV/
+env/
+.conda/
+
+# ---- IDE & Editor ----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ---- macOS -----------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ---- Windows ---------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- Logs & Debugging ------------------------------------------------------
+*.log
+mcp_server_debug.log
+logs/
+*.log.*
+
+# ---- Local development files -----------------------------------------------
+/.credentials
+/.claude
+.mcp.json
+claude.md
+
+# ---- Testing & Coverage ----------------------------------------------------
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# ---- Temporary files -------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+
+# ---- User-specific credentials directory -----------------------------------
+# Note: The actual credentials are stored in ~/.google_workspace_mcp/
+# which is outside the repo, but just in case:
+credentials/
+.credentials/
+
+# ---- Lock files (optional - uncomment if you want to ignore) ---------------
+# uv.lock
+# poetry.lock
