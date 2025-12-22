@@ -30,14 +30,11 @@ from gdocs.docs_helpers import (
     create_bullet_list_request,
     # Paragraph style helpers
     create_update_paragraph_style_request,
-    VALID_ALIGNMENTS,
-    VALID_NAMED_STYLES,
     # Text finding helpers
     find_text_range,
     get_paragraph_range,
     # Tab helpers
     get_all_tabs,
-    find_tab_by_id,
     get_tab_text_length,
 )
 
@@ -1441,7 +1438,7 @@ async def apply_paragraph_style(
         # Find the paragraph containing this text
         paragraph_range = get_paragraph_range(doc, text_range["start_index"])
         if not paragraph_range:
-            return f"Error: Found the text but could not determine the paragraph boundaries."
+            return "Error: Found the text but could not determine the paragraph boundaries."
 
         start_index = paragraph_range["start_index"]
         end_index = paragraph_range["end_index"]

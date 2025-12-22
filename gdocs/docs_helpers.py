@@ -6,8 +6,7 @@ to simplify the implementation of document editing tools.
 """
 
 import logging
-import asyncio
-from typing import Dict, Any, Optional, Tuple, Union, List
+from typing import Dict, Any, Optional, Tuple, List
 
 logger = logging.getLogger(__name__)
 
@@ -799,8 +798,6 @@ def get_tab_text_length(document_tab: Dict[str, Any]) -> int:
     Returns:
         Total character count
     """
-    total_length = 0
-
     body = document_tab.get("body", {})
     content = body.get("content", [])
 

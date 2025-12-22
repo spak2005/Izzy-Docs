@@ -10,7 +10,6 @@ import logging
 from typing import Optional, Dict, Any
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class ChatGPTAuthMiddleware(BaseHTTPMiddleware):
             # Check if it matches a stored session
             session = store.get_session_by_access_token(token)
             if session:
-                logger.debug(f"ChatGPT auth: Found session for token")
+                logger.debug("ChatGPT auth: Found session for token")
                 return {
                     "email": session.get("user_email"),
                     "id": session.get("user_id"),

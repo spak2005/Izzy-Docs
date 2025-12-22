@@ -15,7 +15,6 @@ from starlette.requests import Request
 from openai_apps.manifest import (
     get_app_manifest,
     get_mcp_manifest,
-    get_oauth_metadata,
 )
 
 if TYPE_CHECKING:
@@ -210,7 +209,6 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
         scope = request.query_params.get("scope", "")
         state = request.query_params.get("state", "")
         code_challenge = request.query_params.get("code_challenge")
-        code_challenge_method = request.query_params.get("code_challenge_method", "S256")
 
         logger.info(f"Custom /authorize called: client_id={client_id[:20] if client_id else 'none'}..., redirect_uri={redirect_uri}")
 
@@ -261,7 +259,7 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             }
         )
 
-        logger.info(f"Redirecting to Google OAuth...")
+        logger.info("Redirecting to Google OAuth...")
 
         # Return redirect response
         return HTMLResponse(
@@ -301,7 +299,6 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
         scope = request.query_params.get("scope", "")
         state = request.query_params.get("state", "")
         code_challenge = request.query_params.get("code_challenge")
-        code_challenge_method = request.query_params.get("code_challenge_method", "S256")
 
         logger.info(f"OAuth authorize request: client_id={client_id}, redirect_uri={redirect_uri}, state={state[:20] if state else 'none'}...")
 
@@ -353,7 +350,7 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             }
         )
 
-        logger.info(f"Stored OAuth state, redirecting to Google OAuth...")
+        logger.info("Stored OAuth state, redirecting to Google OAuth...")
 
         # Return redirect response
         return HTMLResponse(
@@ -397,8 +394,8 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             grant_type = body.get("grant_type")
             code = body.get("code")
             redirect_uri = body.get("redirect_uri")
-            client_id = body.get("client_id")
-            client_secret = body.get("client_secret")
+            _client_id = body.get("client_id")  # noqa: F841 - extracted for potential future use
+            _client_secret = body.get("client_secret")  # noqa: F841 - extracted for potential future use
             code_verifier = body.get("code_verifier")  # PKCE
             refresh_token_param = body.get("refresh_token")
 
@@ -580,11 +577,11 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
 
         try:
             state_info = store.validate_and_consume_oauth_state(state, session_id=None)
-            logger.info(f"OAuth state validated successfully")
+            logger.info("OAuth state validated successfully")
         except ValueError as e:
             logger.error(f"OAuth state validation failed: {e}")
             return HTMLResponse(
-                content=f'''
+                content='''
                 <!DOCTYPE html>
                 <html>
                 <head><title>Authentication Failed</title></head>
@@ -618,7 +615,7 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             if response.status_code != 200:
                 logger.error(f"Google token exchange failed: {response.text}")
                 return HTMLResponse(
-                    content=f'''
+                    content='''
                     <!DOCTYPE html>
                     <html>
                     <head><title>Authentication Failed</title></head>
@@ -751,7 +748,7 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
         except Exception as e:
             logger.error(f"OAuth callback error: {e}", exc_info=True)
             return HTMLResponse(
-                content=f'''
+                content='''
                 <!DOCTYPE html>
                 <html>
                 <head><title>Authentication Failed</title></head>
