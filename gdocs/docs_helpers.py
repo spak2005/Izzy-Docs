@@ -11,9 +11,10 @@ from typing import Dict, Any, Optional, Tuple, Union, List
 
 logger = logging.getLogger(__name__)
 
-ColorComponent = Union[int, float]
-RgbColor = Tuple[ColorComponent, ColorComponent, ColorComponent]
-ColorInput = Union[str, RgbColor]
+# ColorInput simplified to str for JSON schema compatibility with ChatGPT
+# Accepts hex color strings like "#RRGGBB" or "RRGGBB"
+# The _normalize_color function also handles RGB tuples/lists at runtime
+ColorInput = str
 
 # Valid alignment values
 VALID_ALIGNMENTS = ["START", "END", "CENTER", "JUSTIFIED"]

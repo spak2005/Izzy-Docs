@@ -47,7 +47,7 @@ def get_app_manifest(
     manifest = {
         "schema_version": "v1",
         "name_for_human": "Google Docs",
-        "name_for_model": "google_docs",
+        "name_for_model": "google_workspace",
         "description_for_human": "Create, read, edit, and manage Google Docs documents with AI assistance.",
         "description_for_model": (
             "A powerful tool for interacting with Google Docs. Use this to create new documents, "

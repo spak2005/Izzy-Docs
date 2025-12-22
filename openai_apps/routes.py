@@ -90,6 +90,32 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
         }
         return JSONResponse(metadata)
 
+    @server.custom_route("/.well-known/openid-configuration", methods=["GET"])
+    async def openid_configuration(request: Request) -> JSONResponse:
+        """
+        OpenID Connect Discovery endpoint.
+
+        Required by ChatGPT for proper OAuth/OIDC integration.
+        """
+        logger.info("Serving OpenID Connect configuration")
+        effective_url = external_url or base_url
+        return JSONResponse({
+            "issuer": effective_url,
+            "authorization_endpoint": f"{effective_url}/authorize",
+            "token_endpoint": f"{effective_url}/token",
+            "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+            "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs",
+            "registration_endpoint": f"{effective_url}/register",
+            "response_types_supported": ["code"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["RS256"],
+            "scopes_supported": _get_required_scopes(),
+            "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic"],
+            "claims_supported": ["sub", "email", "name", "picture", "email_verified"],
+            "code_challenge_methods_supported": ["S256"],
+            "grant_types_supported": ["authorization_code", "refresh_token"],
+        })
+
     @server.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
     async def oauth_protected_resource(request: Request) -> JSONResponse:
         """
@@ -386,15 +412,17 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
                     auth_code_key = f"authcode:{code}"
                     state_info = store.validate_and_consume_oauth_state(auth_code_key, session_id=None)
                     
-                    # Found our stored tokens!
-                    metadata = state_info.get("metadata", {})
+                    # Found our stored tokens! (metadata is merged at top level)
                     token_response = {
-                        "access_token": metadata.get("access_token"),
-                        "refresh_token": metadata.get("refresh_token"),
-                        "expires_in": metadata.get("expires_in", 3600),
-                        "token_type": metadata.get("token_type", "Bearer"),
-                        "scope": metadata.get("scope", ""),
+                        "access_token": state_info.get("access_token"),
+                        "refresh_token": state_info.get("refresh_token"),
+                        "expires_in": state_info.get("expires_in", 3600),
+                        "token_type": state_info.get("token_type", "Bearer"),
+                        "scope": state_info.get("scope", ""),
                     }
+                    # Include id_token if present (required for OpenID Connect)
+                    if state_info.get("id_token"):
+                        token_response["id_token"] = state_info.get("id_token")
                     logger.info("Returned stored tokens for custom auth code")
                     return JSONResponse(token_response)
                 except ValueError:
@@ -639,23 +667,28 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             )
 
             # Also store the auth code -> tokens mapping for the token endpoint
+            auth_code_metadata = {
+                "access_token": token_response["access_token"],
+                "refresh_token": token_response.get("refresh_token"),
+                "expires_in": token_response.get("expires_in", 3600),
+                "token_type": "Bearer",
+                "scope": token_response.get("scope", ""),
+            }
+            # Include id_token if Google returned one (for OpenID Connect)
+            if token_response.get("id_token"):
+                auth_code_metadata["id_token"] = token_response["id_token"]
+            
             store.store_oauth_state(
                 state=f"authcode:{auth_code}",
                 session_id=user_email,
                 expires_in_seconds=300,
-                metadata={
-                    "access_token": token_response["access_token"],
-                    "refresh_token": token_response.get("refresh_token"),
-                    "expires_in": token_response.get("expires_in", 3600),
-                    "token_type": "Bearer",
-                    "scope": token_response.get("scope", ""),
-                }
+                metadata=auth_code_metadata
             )
             logger.info(f"Stored OAuth session and auth code for {user_email}")
 
-            # Get the client's redirect URI from state metadata
-            client_redirect_uri = state_info.get("metadata", {}).get("client_redirect_uri")
-            client_state = state_info.get("metadata", {}).get("client_state", "")
+            # Get the client's redirect URI from state (metadata is merged at top level)
+            client_redirect_uri = state_info.get("client_redirect_uri")
+            client_state = state_info.get("client_state", "")
 
             if client_redirect_uri:
                 # Redirect back to ChatGPT with our auth code
