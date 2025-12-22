@@ -1769,6 +1769,95 @@ async def delete_doc_range(
     return f"Successfully deleted {deleted_chars} characters from range {start_index}-{end_index} in document {document_id}. Link: {link}"
 
 
+@server.tool()
+@handle_http_errors("replace_doc_body", service_type="docs")
+@require_google_service("docs", "docs_write")
+async def replace_doc_body(
+    service: Any,
+    user_google_email: str,
+    document_id: str,
+    new_content: str,
+) -> str:
+    """
+    Replaces the entire body content of a Google Document with new text.
+
+    USE THIS WHEN:
+    - Document has become messy from multiple failed edits
+    - You need to completely rewrite the document content
+    - You want to start fresh WITHOUT creating a new document
+    - Preserving the document ID/URL is important
+
+    This is the "nuclear option" - clears everything and inserts new content
+    while keeping the same document ID, URL, and sharing settings.
+
+    WORKFLOW:
+    1. Build your complete new content as a plain text string
+    2. Call this function to replace everything
+    3. Apply heading styles afterward if needed using apply_paragraph_style
+
+    Args:
+        user_google_email: User's Google email address
+        document_id: ID of the document to update
+        new_content: The complete new content to replace the document body with
+
+    Returns:
+        str: Confirmation message with operation details
+    """
+    logger.info(f"[replace_doc_body] Doc={document_id}, new_content_length={len(new_content)}")
+
+    # Validate inputs
+    validator = ValidationManager()
+    is_valid, error_msg = validator.validate_document_id(document_id)
+    if not is_valid:
+        return f"Error: {error_msg}"
+
+    if not new_content:
+        return "Error: 'new_content' is required. Provide the text to replace the document body with."
+
+    # Get document to find the current end index
+    doc = await asyncio.to_thread(
+        service.documents().get(documentId=document_id).execute
+    )
+
+    body_content = doc.get("body", {}).get("content", [])
+    original_end_index = 1  # Default for empty doc
+
+    if body_content:
+        last_element = body_content[-1]
+        if "endIndex" in last_element:
+            original_end_index = last_element["endIndex"]
+
+    requests = []
+
+    # Use the safe replacement pattern: insert new content first, then delete old
+    # This avoids issues with index 0 (first section break can't be deleted)
+    if original_end_index > 1:
+        # Document has content - insert new, then delete old
+        # Step 1: Insert new content at index 1
+        requests.append(create_insert_text_request(1, new_content))
+
+        # Step 2: Delete old content (now shifted by len(new_content))
+        # Old content now starts at (1 + len(new_content)) and ends at (original_end_index + len(new_content) - 1)
+        delete_start = 1 + len(new_content)
+        delete_end = original_end_index + len(new_content) - 1  # -1 to preserve final newline structure
+
+        if delete_end > delete_start:
+            requests.append(create_delete_range_request(delete_start, delete_end))
+    else:
+        # Document is empty - just insert
+        requests.append(create_insert_text_request(1, new_content))
+
+    # Execute the batch update
+    await asyncio.to_thread(
+        service.documents()
+        .batchUpdate(documentId=document_id, body={"requests": requests})
+        .execute
+    )
+
+    link = f"https://docs.google.com/document/d/{document_id}/edit"
+    return f"Successfully replaced document body with {len(new_content)} characters. Document ID preserved: {document_id}. Link: {link}"
+
+
 # ============================================================================
 # TAB MANAGEMENT TOOLS
 # ============================================================================
