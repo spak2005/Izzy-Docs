@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+import re
 import zipfile
 import xml.etree.ElementTree as ET
 import ssl
@@ -14,6 +15,120 @@ from .api_enablement import get_api_enablement_message
 from auth.google_auth import GoogleAuthenticationError
 
 logger = logging.getLogger(__name__)
+
+
+def translate_docs_api_error(error_details: str) -> Optional[str]:
+    """
+    Translate Google Docs API errors into actionable LLM-friendly messages.
+
+    Args:
+        error_details: The error string from HttpError
+
+    Returns:
+        Translated error message with suggestions, or None if not a recognized pattern
+    """
+    error_lower = error_details.lower()
+
+    # Pattern: Invalid deleteContentRange with segment boundary issues
+    if "invalid deletecontentrange" in error_lower:
+        # Try to extract the index from the error
+        index_match = re.search(r"index\s+(\d+)", error_details, re.IGNORECASE)
+        segment_match = re.search(r"segment[,\s]+(\d+)", error_details, re.IGNORECASE)
+
+        suggestion = (
+            "DELETION BOUNDARY ERROR: The delete range crosses a structural element boundary.\n\n"
+            "WHAT WENT WRONG:\n"
+            "- Google Docs has internal paragraph/element boundaries that can't be split\n"
+            "- Your end_index likely clips into the next element's structure\n\n"
+            "HOW TO FIX:\n"
+            "1. Use get_doc_section_range to get deletion-safe boundaries\n"
+            "2. Or try reducing end_index by 1-2 to avoid the boundary\n"
+            "3. Or use inspect_doc_structure to see element boundaries"
+        )
+
+        if index_match:
+            idx = index_match.group(1)
+            suggestion += f"\n\nPROBLEM INDEX: {idx} - try ending at {int(idx) - 1} instead"
+
+        return suggestion
+
+    # Pattern: Index out of bounds
+    if "index" in error_lower and ("must be less than" in error_lower or "out of bounds" in error_lower):
+        # Extract indices if possible
+        numbers = re.findall(r"\d+", error_details)
+        
+        suggestion = (
+            "INDEX OUT OF BOUNDS: The specified index exceeds the document length.\n\n"
+            "HOW TO FIX:\n"
+            "1. Call inspect_doc_structure first to get the document's total_length\n"
+            "2. Ensure your index is less than total_length\n"
+            "3. For insertions at the end, use total_length - 1"
+        )
+        
+        if len(numbers) >= 2:
+            suggestion += f"\n\nDETAILS: You used index {numbers[0]}, but max allowed is {numbers[1]}"
+        
+        return suggestion
+
+    # Pattern: startIndex must be less than endIndex
+    if "startindex" in error_lower and "endindex" in error_lower:
+        return (
+            "INVALID RANGE: start_index must be less than end_index.\n\n"
+            "HOW TO FIX:\n"
+            "1. Ensure start_index < end_index\n"
+            "2. Use inspect_doc_structure to verify the correct indices\n"
+            "3. For single-character operations, end_index should be start_index + 1"
+        )
+
+    # Pattern: Cannot modify/delete at index 0
+    if "index 0" in error_lower or "first section break" in error_lower:
+        return (
+            "PROTECTED INDEX: Cannot modify index 0 (the document's first section break).\n\n"
+            "HOW TO FIX:\n"
+            "1. Start operations at index 1, not 0\n"
+            "2. The first character of actual content is always at index 1"
+        )
+
+    # Pattern: Invalid segment or segment not found
+    if "segment" in error_lower and ("invalid" in error_lower or "not found" in error_lower):
+        return (
+            "SEGMENT ERROR: The operation targeted an invalid document segment.\n\n"
+            "HOW TO FIX:\n"
+            "1. Use inspect_doc_structure to see the document's current structure\n"
+            "2. Ensure you're targeting the main body, not headers/footers\n"
+            "3. The document structure may have changed - refetch and retry"
+        )
+
+    # Pattern: Table-related errors
+    if "table" in error_lower:
+        if "not found" in error_lower or "does not exist" in error_lower:
+            return (
+                "TABLE NOT FOUND: The specified table index doesn't exist.\n\n"
+                "HOW TO FIX:\n"
+                "1. Use inspect_doc_structure to see how many tables exist\n"
+                "2. Table indices are 0-based (first table is index 0)\n"
+                "3. Use debug_table_structure to examine table details"
+            )
+        elif "cell" in error_lower:
+            return (
+                "TABLE CELL ERROR: Invalid cell reference in table operation.\n\n"
+                "HOW TO FIX:\n"
+                "1. Use debug_table_structure to see actual table dimensions\n"
+                "2. Row/column indices are 0-based\n"
+                "3. Ensure your data array matches the table dimensions"
+            )
+
+    # Pattern: Empty or invalid request
+    if "invalid request" in error_lower or "empty request" in error_lower:
+        return (
+            "INVALID REQUEST: The API request was malformed or empty.\n\n"
+            "HOW TO FIX:\n"
+            "1. Ensure all required parameters are provided\n"
+            "2. Check that text content is not empty\n"
+            "3. Verify index values are positive integers"
+        )
+
+    return None
 
 
 class TransientNetworkError(Exception):
@@ -319,8 +434,15 @@ def handle_http_errors(
                             f"You might need to re-authenticate for user '{user_google_email}'. "
                             f"LLM: Try 'start_google_auth' with the user's email and the appropriate service_name."
                         )
+                    elif error.resp.status == 400 and service_type == "docs":
+                        # Google Docs API errors - try to translate into actionable guidance
+                        translated = translate_docs_api_error(error_details)
+                        if translated:
+                            message = f"API error in {tool_name}:\n\n{translated}\n\nOriginal error: {error}"
+                        else:
+                            message = f"API error in {tool_name}: {error}"
                     else:
-                        # Other HTTP errors (400 Bad Request, etc.) - don't suggest re-auth
+                        # Other HTTP errors - return as-is
                         message = f"API error in {tool_name}: {error}"
 
                     logger.error(f"API error in {tool_name}: {error}", exc_info=True)

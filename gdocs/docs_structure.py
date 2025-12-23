@@ -395,3 +395,116 @@ def extract_outline(doc_data: dict[str, Any]) -> list[dict[str, Any]]:
             })
 
     return outline
+
+
+def _get_heading_level_rank(level: str) -> int:
+    """
+    Get numeric rank for heading level comparison.
+    Lower number = higher level in hierarchy.
+
+    Returns:
+        0 for TITLE, 1 for SUBTITLE, 2-7 for HEADING_1-6, 99 for unknown
+    """
+    if level == "TITLE":
+        return 0
+    elif level == "SUBTITLE":
+        return 1
+    elif level.startswith("HEADING_"):
+        try:
+            return int(level.split("_")[1]) + 1  # HEADING_1 = 2, HEADING_2 = 3, etc.
+        except (ValueError, IndexError):
+            return 99
+    return 99
+
+
+def get_section_range(
+    doc_data: dict[str, Any],
+    heading_text: str,
+    occurrence: int = 1,
+    include_heading: bool = True,
+) -> Optional[dict[str, Any]]:
+    """
+    Get the index range for a document section (from a heading to the next heading of same/higher level).
+
+    This enables semantic operations like "delete the Introduction section" by finding
+    the exact character range that comprises that section.
+
+    Args:
+        doc_data: Raw document data from Google Docs API
+        heading_text: The heading text to find (e.g., "Introduction", "Deep Dive")
+        occurrence: Which instance of the heading (1=first, 2=second, etc.)
+        include_heading: If True, range starts at heading; if False, starts after heading
+
+    Returns:
+        Dictionary with:
+        - start_index: Start of the section
+        - end_index: End of the section (DELETION-SAFE - one before next heading's boundary)
+        - heading_text: The matched heading text
+        - heading_level: The heading level (HEADING_1, etc.)
+        - next_heading: Info about the heading that ends this section (or None if end of doc)
+        Returns None if heading not found.
+
+    Note: end_index is intentionally set to (next_heading.start_index - 1) to avoid
+    clipping into the next heading's paragraph structure during deletion operations.
+    """
+    outline = extract_outline(doc_data)
+
+    if not outline:
+        logger.warning("Document has no headings")
+        return None
+
+    # Find the target heading
+    target_heading = None
+    target_index_in_outline = -1
+    current_occurrence = 0
+
+    for i, heading in enumerate(outline):
+        if heading["text"] == heading_text:
+            current_occurrence += 1
+            if current_occurrence == occurrence:
+                target_heading = heading
+                target_index_in_outline = i
+                break
+
+    if not target_heading:
+        logger.warning(f"Heading '{heading_text}' occurrence {occurrence} not found")
+        return None
+
+    # Determine section start
+    if include_heading:
+        section_start = target_heading["start_index"]
+    else:
+        section_start = target_heading["end_index"]
+
+    # Find the next heading of same or higher level (lower rank number)
+    target_rank = _get_heading_level_rank(target_heading["level"])
+    next_heading = None
+    section_end = None
+
+    for heading in outline[target_index_in_outline + 1:]:
+        heading_rank = _get_heading_level_rank(heading["level"])
+        if heading_rank <= target_rank:
+            # Found a heading of same or higher level - section ends here
+            next_heading = heading
+            # Use start_index - 1 to avoid clipping into next heading's paragraph boundary
+            # This makes the range safe for deletion operations
+            section_end = heading["start_index"] - 1
+            break
+
+    # If no terminating heading found, section goes to end of document
+    if section_end is None:
+        structure = parse_document_structure(doc_data)
+        section_end = structure["total_length"] - 1  # -1 to avoid the final newline
+
+    return {
+        "start_index": section_start,
+        "end_index": section_end,
+        "heading_text": target_heading["text"],
+        "heading_level": target_heading["level"],
+        "occurrence": occurrence,
+        "next_heading": {
+            "text": next_heading["text"],
+            "level": next_heading["level"],
+            "start_index": next_heading["start_index"],
+        } if next_heading else None,
+    }

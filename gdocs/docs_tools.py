@@ -44,6 +44,7 @@ from gdocs.docs_structure import (
     find_tables,
     analyze_document_complexity,
     extract_outline,
+    get_section_range,
 )
 from gdocs.docs_tables import extract_table_as_data
 
@@ -1065,6 +1066,83 @@ async def inspect_doc_structure(
 
     link = f"https://docs.google.com/document/d/{document_id}/edit"
     return f"Document structure analysis for {document_id}:\n\n{json.dumps(result, indent=2)}\n\nLink: {link}"
+
+
+@server.tool()
+@handle_http_errors("get_doc_section_range", is_read_only=True, service_type="docs")
+@require_google_service("docs", "docs_read")
+async def get_doc_section_range(
+    service: Any,
+    user_google_email: str,
+    document_id: str,
+    heading_text: str,
+    occurrence: int = 1,
+    include_heading: bool = True,
+) -> str:
+    """
+    Gets the index range for a document section (from heading to next heading of same/higher level).
+
+    USE THIS FOR SEMANTIC OPERATIONS:
+    - "Delete the Introduction section" → get range, then use delete_doc_range
+    - "Replace the Methods section" → get range, then use modify_doc_text
+    - "Find where Deep Dive ends" → returns the next heading info
+
+    HOW SECTIONS ARE DEFINED:
+    A section starts at a heading and ends when:
+    - Another heading of the SAME level appears (e.g., HEADING_1 → HEADING_1)
+    - A HIGHER level heading appears (e.g., HEADING_2 → HEADING_1)
+    - The document ends
+
+    EXAMPLE OUTPUT:
+    {
+        "start_index": 500,
+        "end_index": 1199,  ← DELETION-SAFE (one before next heading)
+        "heading_text": "Deep Dive",
+        "heading_level": "HEADING_1",
+        "occurrence": 2,
+        "next_heading": {"text": "Conclusion", "level": "HEADING_1", "start_index": 1200}
+    }
+
+    NOTE: end_index is set to (next_heading.start_index - 1) to avoid clipping
+    into the next section's paragraph structure. You can safely pass this range
+    directly to delete_doc_range.
+
+    WORKFLOW TO DELETE A SECTION:
+    1. Call get_doc_section_range(doc_id, "Deep Dive", occurrence=2)
+    2. Use the returned start_index and end_index
+    3. Call delete_doc_range(doc_id, start_index, end_index)
+
+    Args:
+        user_google_email: User's Google email address
+        document_id: ID of the document to inspect
+        heading_text: The heading text to find (e.g., "Introduction", "Deep Dive")
+        occurrence: Which instance of the heading (1=first, 2=second for duplicates)
+        include_heading: If True, range includes the heading itself; if False, starts after heading
+
+    Returns:
+        str: JSON with section range info, or error message if heading not found
+    """
+    logger.debug(f"[get_doc_section_range] Doc={document_id}, heading='{heading_text}', occurrence={occurrence}")
+
+    # Get the document
+    doc = await asyncio.to_thread(
+        service.documents().get(documentId=document_id).execute
+    )
+
+    # Get section range
+    section = get_section_range(doc, heading_text, occurrence, include_heading)
+
+    if not section:
+        # Try to provide helpful info about what headings exist
+        outline = extract_outline(doc)
+        if outline:
+            available_headings = list(set(h["text"] for h in outline))
+            return f"Error: Heading '{heading_text}' (occurrence {occurrence}) not found. Available headings: {available_headings}"
+        else:
+            return f"Error: Document has no headings. Cannot find section '{heading_text}'."
+
+    link = f"https://docs.google.com/document/d/{document_id}/edit"
+    return f"Section range for '{heading_text}' (occurrence {occurrence}):\n\n{json.dumps(section, indent=2)}\n\nLink: {link}"
 
 
 @server.tool()
