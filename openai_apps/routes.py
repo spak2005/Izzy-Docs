@@ -73,6 +73,17 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             '''
         )
 
+    @server.custom_route("/.well-known/openai-apps-challenge", methods=["GET"])
+    async def openai_domain_verification(request: Request) -> HTMLResponse:
+        """
+        OpenAI Apps domain verification endpoint.
+        Returns the verification token for domain ownership proof.
+        """
+        logger.info("Serving OpenAI domain verification token")
+        # Verification token from OpenAI Apps submission
+        token = "A1B2dde1hszKXh0hVFHUrKlXdDbKVsTrIOW8WRZKmvc"
+        return HTMLResponse(content=token, media_type="text/plain")
+
     @server.custom_route("/.well-known/ai-plugin.json", methods=["GET"])
     async def ai_plugin_manifest(request: Request) -> JSONResponse:
         """

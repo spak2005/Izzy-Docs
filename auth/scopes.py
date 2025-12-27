@@ -17,7 +17,8 @@ USERINFO_PROFILE_SCOPE = "https://www.googleapis.com/auth/userinfo.profile"
 OPENID_SCOPE = "openid"
 
 # Google Drive scopes (needed for docs search and comments)
-DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
+# NOTE: Full DRIVE_SCOPE removed to avoid CASA security assessment requirement
+# DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"  # Restricted - requires CASA
 DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
 DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file"
 
@@ -30,7 +31,8 @@ BASE_SCOPES = [USERINFO_EMAIL_SCOPE, USERINFO_PROFILE_SCOPE, OPENID_SCOPE]
 
 # Service-specific scope groups
 DOCS_SCOPES = [DOCS_READONLY_SCOPE, DOCS_WRITE_SCOPE]
-DRIVE_SCOPES = [DRIVE_SCOPE, DRIVE_READONLY_SCOPE, DRIVE_FILE_SCOPE]
+# NOTE: DRIVE_SCOPE removed - using readonly + file scopes to avoid CASA requirement
+DRIVE_SCOPES = [DRIVE_READONLY_SCOPE, DRIVE_FILE_SCOPE]
 
 # Tool-to-scopes mapping
 TOOL_SCOPES_MAP = {

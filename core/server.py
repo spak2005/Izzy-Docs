@@ -14,6 +14,7 @@ from fastmcp.server.auth.providers.google import GoogleProvider
 from auth.oauth21_session_store import get_oauth21_session_store, set_auth_provider
 from auth.google_auth import handle_auth_callback, start_auth_flow, check_client_secrets
 from auth.mcp_session_middleware import MCPSessionMiddleware
+from auth.csp_middleware import CSPMiddleware
 from auth.oauth_responses import (
     create_error_response,
     create_success_response,
@@ -38,6 +39,7 @@ _auth_provider: Optional[GoogleProvider] = None
 _legacy_callback_registered = False
 
 session_middleware = Middleware(MCPSessionMiddleware)
+csp_middleware = Middleware(CSPMiddleware)
 
 
 # Custom FastMCP that adds secure middleware stack for OAuth 2.1
@@ -47,12 +49,14 @@ class SecureFastMCP(FastMCP):
         app = super().streamable_http_app()
 
         # Add middleware in order (first added = outermost layer)
+        # CSP Middleware - adds security headers (outermost)
+        app.user_middleware.insert(0, csp_middleware)
         # Session Management - extracts session info for MCP context
-        app.user_middleware.insert(0, session_middleware)
+        app.user_middleware.insert(1, session_middleware)
 
         # Rebuild middleware stack
         app.middleware_stack = app.build_middleware_stack()
-        logger.info("Added middleware stack: Session Management")
+        logger.info("Added middleware stack: CSP + Session Management")
         return app
 
 
