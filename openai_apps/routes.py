@@ -49,6 +49,30 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
     base_url = config.base_url
     external_url = config.external_url
 
+    @server.custom_route("/", methods=["GET"])
+    async def homepage_root(request: Request) -> HTMLResponse:
+        """
+        Root homepage for Google Search Console verification.
+        Redirects to /docs but includes verification meta tag.
+        """
+        effective_url = external_url or base_url
+        return HTMLResponse(
+            content=f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>IzzyDocs - AI-Powered Google Workspace Integration</title>
+                <meta name="google-site-verification" content="-H4D8INcJe3vzgKqH-xJJut4mi5NK4-OdKzt5UT9bqU" />
+                <meta http-equiv="refresh" content="0;url={effective_url}/docs">
+                <meta name="description" content="IzzyDocs enables AI assistants like ChatGPT to create, edit, and manage your Google Docs and Drive files securely.">
+            </head>
+            <body>
+                <p>Redirecting to <a href="{effective_url}/docs">IzzyDocs</a>...</p>
+            </body>
+            </html>
+            '''
+        )
+
     @server.custom_route("/.well-known/ai-plugin.json", methods=["GET"])
     async def ai_plugin_manifest(request: Request) -> JSONResponse:
         """
@@ -794,8 +818,9 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
 
         Provides terms of service and privacy information.
         """
+        effective_url = external_url or base_url
         legal_url = os.getenv("APP_LEGAL_INFO_URL")
-        if legal_url and legal_url != f"{external_url or base_url}/legal":
+        if legal_url and legal_url != f"{effective_url}/legal":
             return HTMLResponse(
                 content=f'<meta http-equiv="refresh" content="0;url={legal_url}">',
                 headers={"Location": legal_url},
@@ -803,36 +828,118 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             )
 
         return HTMLResponse(
-            content='''
+            content=f'''
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Legal Information - Google Docs MCP</title>
+                <title>Privacy Policy & Terms of Service - IzzyDocs</title>
+                <meta name="description" content="Privacy Policy and Terms of Service for IzzyDocs - AI-Powered Google Workspace Integration">
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-                    h1 { color: #1a73e8; }
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; }}
+                    .container {{ background: white; padding: 40px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+                    h1 {{ color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 16px; }}
+                    h2 {{ color: #202124; margin-top: 32px; }}
+                    h3 {{ color: #5f6368; }}
+                    ul {{ padding-left: 24px; }}
+                    li {{ margin: 8px 0; }}
+                    .last-updated {{ color: #5f6368; font-size: 14px; margin-bottom: 24px; }}
+                    .footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid #dadce0; text-align: center; }}
+                    .footer a {{ color: #1a73e8; text-decoration: none; }}
+                    .footer a:hover {{ text-decoration: underline; }}
                 </style>
             </head>
             <body>
-                <h1>Google Docs MCP - Legal Information</h1>
-                <h2>Terms of Service</h2>
-                <p>This application allows you to interact with Google Docs and Google Drive through ChatGPT.</p>
-                <p>By using this application, you agree to:</p>
-                <ul>
-                    <li>Google's Terms of Service for Google Docs and Drive</li>
-                    <li>OpenAI's Terms of Service for ChatGPT</li>
-                    <li>Use the application responsibly and in compliance with all applicable laws</li>
-                </ul>
-                <h2>Privacy Policy</h2>
-                <p>This application:</p>
-                <ul>
-                    <li>Only accesses Google services with your explicit OAuth authorization</li>
-                    <li>Does not store your Google credentials permanently (uses OAuth tokens)</li>
-                    <li>Does not share your data with third parties</li>
-                    <li>Processes your documents only as requested through ChatGPT</li>
-                </ul>
-                <h2>Contact</h2>
-                <p>For questions or concerns, please contact the application administrator.</p>
+                <div class="container">
+                    <h1>IzzyDocs - Privacy Policy & Terms of Service</h1>
+                    <p class="last-updated">Last updated: December 2024</p>
+                    
+                    <h2>1. Introduction</h2>
+                    <p>IzzyDocs ("the Application", "we", "us") is a Model Context Protocol (MCP) server that enables AI assistants like ChatGPT to interact with Google Docs and Google Drive on your behalf. This document describes how we handle your data and the terms under which you may use our service.</p>
+                    
+                    <h2>2. Privacy Policy</h2>
+                    
+                    <h3>2.1 Data We Access</h3>
+                    <p>When you authorize IzzyDocs, we request access to:</p>
+                    <ul>
+                        <li><strong>Google Docs:</strong> Read and write access to create, view, and edit documents</li>
+                        <li><strong>Google Drive:</strong> Read and write access to list, search, and manage files</li>
+                        <li><strong>User Profile:</strong> Your email address and basic profile information for authentication</li>
+                    </ul>
+                    
+                    <h3>2.2 How We Use Your Data</h3>
+                    <ul>
+                        <li>We access your Google services <strong>only</strong> when you explicitly request actions through ChatGPT</li>
+                        <li>We do not store your documents or file contents on our servers</li>
+                        <li>We do not analyze, mine, or use your data for advertising purposes</li>
+                        <li>We process requests in real-time and do not retain document content after the request is complete</li>
+                    </ul>
+                    
+                    <h3>2.3 Data Storage</h3>
+                    <ul>
+                        <li><strong>OAuth Tokens:</strong> We temporarily store OAuth tokens to authenticate requests. These are stored securely and are not shared with third parties.</li>
+                        <li><strong>Session Data:</strong> Session information is stored in memory and is not persisted across server restarts.</li>
+                        <li><strong>No Permanent Storage:</strong> We do not permanently store your Google credentials, documents, or personal data.</li>
+                    </ul>
+                    
+                    <h3>2.4 Third-Party Services</h3>
+                    <p>This application interacts with:</p>
+                    <ul>
+                        <li><strong>Google APIs:</strong> Subject to <a href="https://policies.google.com/privacy">Google's Privacy Policy</a></li>
+                        <li><strong>OpenAI/ChatGPT:</strong> Subject to <a href="https://openai.com/privacy">OpenAI's Privacy Policy</a></li>
+                    </ul>
+                    
+                    <h3>2.5 Data Security</h3>
+                    <p>We implement industry-standard security measures including:</p>
+                    <ul>
+                        <li>OAuth 2.1 with PKCE for secure authentication</li>
+                        <li>HTTPS encryption for all communications</li>
+                        <li>No storage of Google passwords or sensitive credentials</li>
+                    </ul>
+                    
+                    <h2>3. Terms of Service</h2>
+                    
+                    <h3>3.1 Acceptance of Terms</h3>
+                    <p>By using IzzyDocs, you agree to these terms and to comply with:</p>
+                    <ul>
+                        <li><a href="https://policies.google.com/terms">Google's Terms of Service</a></li>
+                        <li><a href="https://openai.com/terms">OpenAI's Terms of Service</a></li>
+                        <li>All applicable laws and regulations</li>
+                    </ul>
+                    
+                    <h3>3.2 Acceptable Use</h3>
+                    <p>You agree to:</p>
+                    <ul>
+                        <li>Use the application only for lawful purposes</li>
+                        <li>Not attempt to circumvent security measures</li>
+                        <li>Not use the application to harass, abuse, or harm others</li>
+                        <li>Not use the application to violate intellectual property rights</li>
+                    </ul>
+                    
+                    <h3>3.3 Disclaimer of Warranties</h3>
+                    <p>The application is provided "as is" without warranties of any kind. We do not guarantee uninterrupted or error-free service.</p>
+                    
+                    <h3>3.4 Limitation of Liability</h3>
+                    <p>We are not liable for any indirect, incidental, or consequential damages arising from your use of the application.</p>
+                    
+                    <h3>3.5 Revocation of Access</h3>
+                    <p>You may revoke access at any time by:</p>
+                    <ul>
+                        <li>Visiting <a href="https://myaccount.google.com/permissions">Google Account Permissions</a></li>
+                        <li>Removing "IzzyDocs" from your authorized applications</li>
+                    </ul>
+                    
+                    <h2>4. Contact Information</h2>
+                    <p>For questions, concerns, or data deletion requests, please contact:</p>
+                    <p><strong>Email:</strong> uzoisrael2005@gmail.com</p>
+                    
+                    <h2>5. Changes to This Policy</h2>
+                    <p>We may update this policy from time to time. Continued use of the application constitutes acceptance of any changes.</p>
+                    
+                    <div class="footer">
+                        <p><a href="{effective_url}/docs">← Back to Home</a></p>
+                        <p>&copy; 2024 IzzyDocs. All rights reserved.</p>
+                    </div>
+                </div>
             </body>
             </html>
             '''
@@ -841,10 +948,12 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
     @server.custom_route("/docs", methods=["GET"])
     async def api_documentation(request: Request) -> HTMLResponse:
         """
-        API documentation page.
+        API documentation and homepage.
 
         Provides documentation for developers integrating with the MCP server.
+        Also serves as the app homepage for Google OAuth verification.
         """
+        effective_url = external_url or base_url
         manifest = get_mcp_manifest(base_url=base_url, external_url=external_url)
         tools_html = ""
         for tool in manifest.get("tools", []):
@@ -861,26 +970,61 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Google Docs MCP - API Documentation</title>
+                <title>IzzyDocs - AI-Powered Google Workspace Integration</title>
+                <meta name="google-site-verification" content="-H4D8INcJe3vzgKqH-xJJut4mi5NK4-OdKzt5UT9bqU" />
+                <meta name="description" content="IzzyDocs enables AI assistants like ChatGPT to create, edit, and manage your Google Docs and Drive files securely.">
                 <style>
                     body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
                     h1 {{ color: #1a73e8; }}
+                    .hero {{ background: linear-gradient(135deg, #4285f4 0%, #34a853 100%); color: white; padding: 40px; border-radius: 16px; margin-bottom: 24px; text-align: center; }}
+                    .hero h1 {{ color: white; margin: 0 0 16px 0; font-size: 2.5em; }}
+                    .hero p {{ margin: 0; font-size: 1.2em; opacity: 0.9; }}
                     .tool {{ background: white; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
                     .tool h3 {{ margin: 0 0 8px 0; color: #202124; }}
                     .tool p {{ margin: 0 0 8px 0; color: #5f6368; }}
                     .category {{ display: inline-block; background: #e8f0fe; color: #1a73e8; padding: 4px 8px; border-radius: 4px; font-size: 12px; }}
                     .section {{ margin: 24px 0; }}
                     code {{ background: #f1f3f4; padding: 2px 6px; border-radius: 4px; }}
+                    .footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid #dadce0; text-align: center; color: #5f6368; }}
+                    .footer a {{ color: #1a73e8; text-decoration: none; margin: 0 12px; }}
+                    .footer a:hover {{ text-decoration: underline; }}
+                    .features {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }}
+                    .feature {{ background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+                    .feature h3 {{ color: #1a73e8; margin: 0 0 8px 0; }}
+                    .feature p {{ color: #5f6368; margin: 0; }}
                 </style>
             </head>
             <body>
-                <h1>Google Docs MCP - API Documentation</h1>
-                <p>Version: {manifest.get('version', '1.0.0')}</p>
+                <div class="hero">
+                    <h1>IzzyDocs</h1>
+                    <p>AI-Powered Google Workspace Integration for ChatGPT</p>
+                </div>
                 
                 <div class="section">
-                    <h2>Transport</h2>
-                    <p>Type: <code>{manifest.get('transport', {}).get('type', 'streamable-http')}</code></p>
-                    <p>URL: <code>{manifest.get('transport', {}).get('url', '')}</code></p>
+                    <h2>What is IzzyDocs?</h2>
+                    <p>IzzyDocs is a secure MCP (Model Context Protocol) server that enables AI assistants like ChatGPT to interact with your Google Docs and Google Drive. Create documents, edit content, manage files, and more - all through natural language.</p>
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <h3>📝 Document Creation</h3>
+                        <p>Create and edit Google Docs with AI assistance. Format text, add headings, insert tables, and more.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>📁 Drive Management</h3>
+                        <p>Search, list, and organize your Google Drive files. Share documents and manage permissions.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🔒 Secure Authentication</h3>
+                        <p>Uses OAuth 2.1 with PKCE for secure authentication. Your credentials are never stored.</p>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2>API Documentation</h2>
+                    <p>Version: {manifest.get('version', '1.0.0')}</p>
+                    <p>Transport: <code>{manifest.get('transport', {}).get('type', 'streamable-http')}</code></p>
+                    <p>Endpoint: <code>{manifest.get('transport', {}).get('url', '')}</code></p>
                 </div>
                 
                 <div class="section">
@@ -893,6 +1037,14 @@ def register_openai_apps_routes(server: "FastMCP") -> None:
                     <p>This API uses OAuth 2.1 with PKCE for authentication.</p>
                     <p>Authorization URL: <code>{manifest.get('authentication', {}).get('flows', {}).get('authorizationCode', {}).get('authorizationUrl', '')}</code></p>
                     <p>Token URL: <code>{manifest.get('authentication', {}).get('flows', {}).get('authorizationCode', {}).get('tokenUrl', '')}</code></p>
+                </div>
+                
+                <div class="footer">
+                    <p>
+                        <a href="{effective_url}/legal">Privacy Policy</a>
+                        <a href="{effective_url}/legal">Terms of Service</a>
+                    </p>
+                    <p>&copy; 2024 IzzyDocs. All rights reserved.</p>
                 </div>
             </body>
             </html>

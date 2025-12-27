@@ -5,6 +5,7 @@ gitdiff.txt
 
 # Documentation and notes
 *.md
+README.md
 AUTHENTICATION_REFACTOR_PROPOSAL.md
 leverage_fastmcp_responses.md
 
@@ -18,10 +19,19 @@ pytest_out.txt
 build/
 dist/
 *.egg-info/
+google_docs_mcp.egg-info/
 
 # Development files
 mcp_server_debug.log
 .credentials/
+.env
+.env.*
+
+# IMPORTANT: Virtual environment (this is 100MB+!)
+.venv/
+venv/
+env/
+.virtualenv/
 
 # Cache and temporary files
 __pycache__/
@@ -30,13 +40,24 @@ __pycache__/
 *.pyd
 .Python
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+.cursor/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Temporary and log files
+tmp/
+*.log
+logs/
+
+# Lock file (we'll use pyproject.toml)
+# uv.lock is needed for reproducible builds - keep it
