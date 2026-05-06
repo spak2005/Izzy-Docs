@@ -184,16 +184,48 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 ## Environment Variables
 
+### Always Required
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GOOGLE_OAUTH_CLIENT_ID` | OAuth client ID from Google Cloud | Required |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth client secret | Required |
-| `USER_GOOGLE_EMAIL` | Default email for single-user auth | None |
-| `OAUTHLIB_INSECURE_TRANSPORT` | Allow HTTP for development | `0` |
-| `WORKSPACE_MCP_PORT` | Server port for HTTP mode | `8000` |
-| `WORKSPACE_MCP_BASE_URI` | Base server URI | `http://localhost` |
-| `MCP_ENABLE_OAUTH21` | Enable OAuth 2.1 support | `false` |
-| `WORKSPACE_MCP_STATELESS_MODE` | Stateless mode for containers | `false` |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth client secret from Google Cloud | Required |
+
+### Core Server Settings
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Primary HTTP port override | `8000` |
+| `WORKSPACE_MCP_PORT` | Alternate port variable (used if `PORT` is unset) | `8000` |
+| `WORKSPACE_MCP_BASE_URI` | Base URI used to build local server URLs | `http://localhost` |
+| `WORKSPACE_EXTERNAL_URL` | Public URL for reverse proxy/ngrok/production | None |
+| `GOOGLE_OAUTH_REDIRECT_URI` | Explicit OAuth redirect URI override | Auto-generated (`{base}:{port}/oauth2callback`) |
+
+### OAuth Mode Controls
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MCP_ENABLE_OAUTH21` | Enable OAuth 2.1 behavior and PKCE-oriented metadata | `false` |
+| `WORKSPACE_MCP_STATELESS_MODE` | Enable stateless mode (requires OAuth 2.1) | `false` |
+| `EXTERNAL_OAUTH21_PROVIDER` | Use external OAuth 2.1 provider mode | `false` |
+| `MCP_SINGLE_USER_MODE` | Internal single-user mode toggle (normally set by CLI flag) | `false` |
+| `USER_GOOGLE_EMAIL` | Default user email for local/single-user auth workflows | None |
+
+### OpenAI Apps / HTTP Route Settings
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_APPS_SDK_ENABLED` | Enable OpenAI Apps SDK routes in HTTP mode | `true` |
+| `OPENAI_VERIFICATION_TOKEN` | Domain verification token for OpenAI Apps | Empty |
+| `APP_CONTACT_EMAIL` | Contact email shown in app manifest | `support@example.com` |
+| `APP_LEGAL_INFO_URL` | Legal URL shown in app manifest and docs | `{external_or_base}/legal` |
+| `APP_LOGO_PATH` | Optional local path to custom logo image | None |
+
+### Development / Security Flags
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OAUTHLIB_INSECURE_TRANSPORT` | Allow OAuth over HTTP in development only | `0` |
 
 ## Project Structure
 
