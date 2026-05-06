@@ -227,6 +227,33 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 |----------|-------------|---------|
 | `OAUTHLIB_INSECURE_TRANSPORT` | Allow OAuth over HTTP in development only | `0` |
 
+## HTTP Endpoints (streamable-http mode)
+
+When running with `--transport streamable-http`, the server exposes:
+
+### Core endpoints
+
+- `GET /health` - Service health and runtime metadata
+- `GET /attachments/{file_id}` - Temporary attachment download endpoint
+
+### OpenAI Apps SDK endpoints (`OPENAI_APPS_SDK_ENABLED=true`)
+
+- `GET /.well-known/ai-plugin.json`
+- `GET /.well-known/oauth-authorization-server`
+- `GET /.well-known/openid-configuration`
+- `GET /.well-known/oauth-protected-resource`
+- `GET /.well-known/oauth-protected-resource/mcp`
+- `GET /mcp-manifest`
+- `GET /docs`
+- `GET /legal`
+- `GET /logo.png`
+- `GET /authorize`
+- `GET /oauth2/authorize`
+- `POST /token`
+- `POST /oauth2/token`
+- `GET /google-oauth-callback`
+- `POST /register`
+
 ## Project Structure
 
 ```
