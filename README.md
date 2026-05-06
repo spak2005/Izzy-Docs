@@ -122,7 +122,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 | `create_doc` | Create a new Google Doc |
 | `list_docs_in_folder` | List documents in a Drive folder |
 | `export_doc_to_pdf` | Export document to PDF format |
-| `list_document_tabs` | List all tabs in a document |
+| `list_doc_tabs` | List all tabs in a document |
 
 ### Text Editing & Formatting
 | Tool | Description |
@@ -132,7 +132,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 | `format_matching_text` | Find text by pattern and apply formatting without modifying content |
 | `apply_paragraph_style` | Apply paragraph-level styling (alignment, line spacing, named styles, indentation) |
 | `append_to_doc` | Append text to the end of a document |
-| `delete_range` | Delete content within a specific range |
+| `delete_doc_range` | Delete content within a specific range |
 
 ### Document Structure
 | Tool | Description |
