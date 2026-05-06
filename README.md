@@ -258,22 +258,20 @@ When running with `--transport streamable-http`, the server exposes:
 
 ```
 google-docs-mcp/
-├── auth/              # Authentication system
-│   ├── google_auth.py      # OAuth handling
-│   ├── scopes.py           # Scope definitions
-│   └── service_decorator.py # Service injection decorators
-├── core/              # MCP server core
-│   ├── server.py           # FastMCP server setup
-│   ├── utils.py            # Utility functions
-│   └── comments.py         # Comment management
-├── gdocs/             # Google Docs tools
-│   ├── docs_tools.py       # Main tool implementations
-│   ├── docs_helpers.py     # Request builders
-│   ├── docs_structure.py   # Document parsing
-│   ├── docs_tables.py      # Table utilities
-│   └── managers/           # Operation managers
-├── main.py            # Server entry point
-└── pyproject.toml     # Dependencies
+├── auth/                    # OAuth config, callbacks, scopes, middleware
+├── core/                    # Server setup, shared utilities, comments, attachments
+│   └── server.py            # FastMCP instance + HTTP route registration
+├── gdocs/                   # Google Docs MCP tools and managers
+│   ├── docs_tools.py        # Docs tool implementations
+│   └── managers/            # Validation, table, batch, header/footer managers
+├── gdrive/                  # Google Drive MCP tools and helper logic
+│   └── drive_tools.py       # Drive tool implementations
+├── openai_apps/             # OpenAI Apps SDK routes and manifest generation
+│   ├── routes.py            # /.well-known, OAuth, and docs/legal routes
+│   └── manifest.py          # ai-plugin and MCP manifest builders
+├── main.py                  # Local entrypoint (stdio or streamable-http)
+├── fastmcp_server.py        # FastMCP Cloud entrypoint (OAuth 2.1 + stateless defaults)
+└── pyproject.toml           # Package metadata and dependencies
 ```
 
 ## Development
