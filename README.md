@@ -329,6 +329,28 @@ This project intentionally avoids full Drive scope (`https://www.googleapis.com/
 - Use `OAUTHLIB_INSECURE_TRANSPORT=1` only in development
 - Use HTTPS and OAuth 2.1 in production
 
+## Documentation Validation Checklist
+
+Before releasing documentation changes, verify:
+
+- Tool names in README match `@server.tool()` names in `gdocs/docs_tools.py` and `gdrive/drive_tools.py`
+- Environment variable defaults align with `auth/oauth_config.py`, `main.py`, and `fastmcp_server.py`
+- HTTP endpoint list matches `core/server.py` and `openai_apps/routes.py`
+- OAuth flow text matches currently enabled auth routes and mode behavior
+
+## Troubleshooting by Mode
+
+### STDIO mode (`uv run main.py`)
+
+- If auth never completes, confirm callback URL is reachable at `/oauth2callback`
+- If tools fail immediately, verify `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` are set
+
+### Streamable HTTP mode (`uv run main.py --transport streamable-http`)
+
+- If OAuth redirects fail, set `WORKSPACE_EXTERNAL_URL` to your public URL and update Google redirect URIs
+- If OpenAI well-known endpoints return 404, ensure `OPENAI_APPS_SDK_ENABLED=true`
+- If port bind fails, change `PORT`/`WORKSPACE_MCP_PORT` or stop the conflicting process
+
 ## License
 
 MIT License - see `LICENSE` file for details.
