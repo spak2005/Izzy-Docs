@@ -315,6 +315,14 @@ Authentication behavior depends on runtime mode and OAuth settings:
 - Use `--single-user` for simplified local workflows.
 - Incompatible with stateless mode.
 
+## Scope Limitations
+
+This project intentionally avoids full Drive scope (`https://www.googleapis.com/auth/drive`) to reduce verification overhead and avoid CASA requirements.
+
+- Enabled Drive scopes: `drive.readonly`, `drive.file`
+- Practical impact: broad search and read operations work, but some write operations are limited to app-created files
+- Full decision log and trade-offs: `docs/SCOPE_DECISIONS.md`
+
 ## Security
 
 - Never commit `.env`, `client_secret.json`, or `.credentials/` to source control
