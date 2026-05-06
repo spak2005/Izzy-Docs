@@ -46,7 +46,7 @@ name = "Israel Ogbonna"
 text = "MIT"
 
 [project.urls]
-Repository = "https://github.com/yourusername/google-docs-mcp"
+Repository = "https://github.com/spak2005/Izzy-Docs-"
 
 [project.scripts]
 google-docs-mcp = "main:main"
