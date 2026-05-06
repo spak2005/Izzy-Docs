@@ -67,15 +67,25 @@ OAUTHLIB_INSECURE_TRANSPORT=1
 ### 4. Start the Server
 
 ```bash
-# Install dependencies and run
+# Install dependencies
+uv sync
+
+# Run in stdio mode (default)
 uv run main.py
 
-# Or with HTTP transport
+# Run with HTTP transport
 uv run main.py --transport streamable-http
 
 # Single-user mode (simplified authentication)
 uv run main.py --single-user
 ```
+
+### Startup Commands by Mode
+
+- **STDIO**: `uv run main.py`
+- **Streamable HTTP**: `uv run main.py --transport streamable-http`
+- **Single-user STDIO**: `uv run main.py --single-user`
+- **FastMCP Cloud entrypoint**: `uv run fastmcp run fastmcp_server.py`
 
 ## Claude Desktop Configuration
 
