@@ -164,9 +164,18 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 |------|-------------|
 | `search_drive_files` | Search for files in Google Drive |
 | `get_drive_file_content` | Get file content from Drive |
+| `get_drive_file_download_url` | Generate a temporary HTTP download URL for a Drive file |
+| `list_drive_items` | List files and folders in a Drive folder |
+| `create_drive_file` | Create a new Drive file from text, local path, or URL content |
 | `update_drive_file` | Update file metadata (rename, move, star, trash) |
+| `get_drive_shareable_link` | Generate or fetch a shareable Drive link |
 | `share_drive_file` | Share a file with users, groups, or publicly |
+| `batch_share_drive_file` | Apply multiple share operations in one request |
 | `get_drive_file_permissions` | Check sharing permissions on a file |
+| `check_drive_file_public_access` | Verify whether a file is publicly accessible |
+| `update_drive_permission` | Modify an existing file permission |
+| `remove_drive_permission` | Remove a specific file permission |
+| `transfer_drive_ownership` | Transfer file ownership to another Google account |
 
 ### Authentication
 | Tool | Description |
