@@ -26,6 +26,14 @@ A Model Context Protocol (MCP) server for Google Docs API integration. Enables n
 
 ## Quick Start
 
+### Choose Your Mode
+
+Pick one runtime mode before setup:
+
+- **STDIO (`main.py --transport stdio`)**: Best for local MCP clients like Claude Desktop.
+- **Streamable HTTP (`main.py --transport streamable-http`)**: Best for remote clients, browser-based flows, and OpenAI Apps SDK endpoints.
+- **FastMCP Cloud entrypoint (`fastmcp_server.py`)**: Cloud-oriented mode that enforces OAuth 2.1 and stateless defaults.
+
 ### 1. Google Cloud Setup
 
 1. Create a new project in [Google Cloud Console](https://console.cloud.google.com/)
