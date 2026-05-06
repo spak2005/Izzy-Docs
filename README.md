@@ -236,11 +236,27 @@ async def your_new_tool(service, user_google_email: str, document_id: str):
 
 ## Authentication Flow
 
-1. When you first call a tool, the server returns an authorization URL
-2. Open the URL in your browser and authorize access
-3. Google provides an authorization code
-4. The server completes authentication and retries your request
-5. Credentials are cached for future requests
+Authentication behavior depends on runtime mode and OAuth settings:
+
+### Legacy OAuth flow (default `main.py`, OAuth 2.0 style)
+
+1. First tool call triggers auth if credentials are missing
+2. Server returns an authorization URL
+3. User signs in with Google and is redirected to `/oauth2callback`
+4. Server exchanges code, stores credentials, and retries the tool call
+
+### OAuth 2.1 / OpenAI Apps flow (`streamable-http` + Apps routes)
+
+1. OAuth client starts at `/oauth2/authorize` (or `/authorize`)
+2. Server redirects to Google OAuth consent
+3. Google redirects back to `/google-oauth-callback`
+4. Server stores session/token state and issues code for `/oauth2/token`
+5. Client exchanges code at `/oauth2/token` and uses bearer tokens for MCP calls
+
+### Single-user mode
+
+- Use `--single-user` for simplified local workflows.
+- Incompatible with stateless mode.
 
 ## Security
 
