@@ -133,6 +133,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 | `apply_paragraph_style` | Apply paragraph-level styling (alignment, line spacing, named styles, indentation) |
 | `append_to_doc` | Append text to the end of a document |
 | `delete_doc_range` | Delete content within a specific range |
+| `replace_doc_body` | Replace the entire document body while preserving the same doc ID |
 
 ### Document Structure
 | Tool | Description |
@@ -142,6 +143,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 | `update_doc_headers_footers` | Modify document headers and footers |
 | `batch_update_doc` | Execute multiple operations atomically |
 | `inspect_doc_structure` | Analyze document structure and find insertion points |
+| `get_doc_section_range` | Get character index boundaries for a named section |
 
 ### Tables
 | Tool | Description |
